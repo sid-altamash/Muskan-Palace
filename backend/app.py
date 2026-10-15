@@ -22,11 +22,6 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 # Initialize Database
 db = SQLAlchemy(app)
 
-with app.app_context():
-    try:
-        db.create_all()
-    except Exception as e:
-        app.logger.warning(f"Database initialization note: {e}")
 
 # Allowed Slot Options
 SLOT_MORNING = "Morning"
@@ -71,6 +66,27 @@ class Booking(db.Model):
             "status": self.status,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
+
+
+# ==========================================
+# Database Initialization & Auto-Seed
+# ==========================================
+def init_db():
+    with app.app_context():
+        try:
+            db.create_all()
+            if Booking.query.count() == 0:
+                try:
+                    import seed_data
+                    seed_data.seed()
+                except Exception as se:
+                    app.logger.info(f"Database auto-seed note: {se}")
+        except Exception as e:
+            app.logger.warning(f"Database initialization note: {e}")
+
+# Initialize database tables on startup (works under Gunicorn, WSGI, or CLI)
+init_db()
+
 
 
 # ==========================================
