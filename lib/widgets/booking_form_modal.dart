@@ -51,6 +51,8 @@ class _BookingFormModalState extends State<BookingFormModal> {
 
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _totalPeopleController;
+  late TextEditingController _waitersCountController;
   late TextEditingController _totalAmountController;
   late TextEditingController _advancePaidController;
 
@@ -72,6 +74,10 @@ class _BookingFormModalState extends State<BookingFormModal> {
       _currentDate = DateTime.tryParse(existing.eventDate) ?? widget.selectedDate;
       _nameController = TextEditingController(text: existing.customerName);
       _phoneController = TextEditingController(text: existing.customerPhone);
+      _totalPeopleController = TextEditingController(
+          text: existing.totalPeople > 0 ? existing.totalPeople.toString() : '');
+      _waitersCountController = TextEditingController(
+          text: existing.waitersCount > 0 ? existing.waitersCount.toString() : '');
       _totalAmountController = TextEditingController(text: existing.totalAmount.toStringAsFixed(0));
       _advancePaidController = TextEditingController(text: existing.advancePaid.toStringAsFixed(0));
       _selectedSlot = existing.slot;
@@ -80,6 +86,8 @@ class _BookingFormModalState extends State<BookingFormModal> {
       _currentDate = widget.selectedDate;
       _nameController = TextEditingController();
       _phoneController = TextEditingController();
+      _totalPeopleController = TextEditingController();
+      _waitersCountController = TextEditingController();
       _totalAmountController = TextEditingController();
       _advancePaidController = TextEditingController();
 
@@ -98,6 +106,8 @@ class _BookingFormModalState extends State<BookingFormModal> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _totalPeopleController.dispose();
+    _waitersCountController.dispose();
     _totalAmountController.dispose();
     _advancePaidController.dispose();
     super.dispose();
@@ -168,6 +178,9 @@ class _BookingFormModalState extends State<BookingFormModal> {
 
     final dateStr = DateFormat('yyyy-MM-dd').format(_currentDate);
 
+    final totalPeople = int.tryParse(_totalPeopleController.text.trim()) ?? 0;
+    final waitersCount = int.tryParse(_waitersCountController.text.trim()) ?? 0;
+
     try {
       if (isEditing) {
         // Alter / Edit existing booking
@@ -176,6 +189,8 @@ class _BookingFormModalState extends State<BookingFormModal> {
           'customer_phone': _phoneController.text.trim(),
           'event_date': dateStr,
           'slot': _selectedSlot!,
+          'total_people': totalPeople,
+          'waiters_count': waitersCount,
           'total_amount': total,
           'advance_paid': advance,
           'status': _selectedStatus,
@@ -212,6 +227,8 @@ class _BookingFormModalState extends State<BookingFormModal> {
           customerPhone: _phoneController.text.trim(),
           eventDate: dateStr,
           slot: _selectedSlot!,
+          totalPeople: totalPeople,
+          waitersCount: waitersCount,
           totalAmount: total,
           advancePaid: advance,
           status: _selectedStatus,
@@ -547,6 +564,48 @@ class _BookingFormModalState extends State<BookingFormModal> {
                   onChanged: (val) {
                     if (val != null) setState(() => _selectedStatus = val);
                   },
+                ),
+                const SizedBox(height: 14),
+
+                // Total People & No. of Waiters Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('Total People (Guests)'),
+                          TextFormField(
+                            controller: _totalPeopleController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _buildInputDecoration(
+                              hint: 'e.g., 500',
+                              icon: Icons.groups_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFieldLabel('No. of Waiters'),
+                          TextFormField(
+                            controller: _waitersCountController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: _buildInputDecoration(
+                              hint: 'e.g., 20',
+                              icon: Icons.room_service_rounded,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 14),
 

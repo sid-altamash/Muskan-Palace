@@ -315,7 +315,7 @@ class AllBookingsTabState extends State<AllBookingsTab> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildSummaryItem('Total Bookings', '$_allBookings.length ($confirmedCount active)', Icons.calendar_month_rounded),
+                    _buildSummaryItem('Total Bookings', '${_allBookings.length} ($confirmedCount active)', Icons.calendar_month_rounded),
                     Container(width: 1, height: 32, color: Colors.white12),
                     _buildSummaryItem('Total Revenue', currencyFormat.format(totalRevenue), Icons.currency_rupee_rounded),
                     Container(width: 1, height: 32, color: Colors.white12),
@@ -690,6 +690,58 @@ class AllBookingsTabState extends State<AllBookingsTab> {
               ),
             ],
           ),
+
+          if (b.totalPeople > 0 || b.waitersCount > 0) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (b.totalPeople > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.groups_rounded, size: 12, color: Color(0xFF60A5FA)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${b.totalPeople} Guests',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF93C5FD), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (b.totalPeople > 0 && b.waitersCount > 0)
+                  const SizedBox(width: 8),
+                if (b.waitersCount > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(5),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.room_service_rounded, size: 12, color: Color(0xFF34D399)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${b.waitersCount} Waiters',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF6EE7B7), fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
           const SizedBox(height: 12),
 
           // Financials Row

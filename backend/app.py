@@ -49,6 +49,8 @@ class Booking(db.Model):
     slot = db.Column(db.String(20), nullable=False)  # "Morning", "Evening", "Full Day"
     total_amount = db.Column(db.Float, nullable=False, default=0.0)
     advance_paid = db.Column(db.Float, nullable=False, default=0.0)
+    total_people = db.Column(db.Integer, nullable=True, default=0)
+    waiters_count = db.Column(db.Integer, nullable=True, default=0)
     status = db.Column(db.String(20), nullable=False, default=STATUS_CONFIRMED)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -60,6 +62,8 @@ class Booking(db.Model):
             "customer_phone": self.customer_phone,
             "event_date": self.event_date,
             "slot": self.slot,
+            "total_people": int(self.total_people or 0),
+            "waiters_count": int(self.waiters_count or 0),
             "total_amount": float(self.total_amount),
             "advance_paid": float(self.advance_paid),
             "balance_amount": round(float(self.total_amount - self.advance_paid), 2),
@@ -75,6 +79,19 @@ def init_db():
     with app.app_context():
         try:
             db.create_all()
+            # Migration check: ensure total_people and waiters_count columns exist in table
+            with db.engine.connect() as conn:
+                try:
+                    conn.execute(db.text("ALTER TABLE bookings ADD COLUMN total_people INTEGER DEFAULT 0"))
+                    conn.commit()
+                except Exception:
+                    pass
+                try:
+                    conn.execute(db.text("ALTER TABLE bookings ADD COLUMN waiters_count INTEGER DEFAULT 0"))
+                    conn.commit()
+                except Exception:
+                    pass
+
             if Booking.query.count() == 0:
                 try:
                     import seed_data
@@ -286,12 +303,29 @@ def create_booking():
                 "message": reason
             }), 409
 
+    # People & Waiters validation
+    try:
+        total_people = int(data.get('total_people', 0) or 0)
+    except (ValueError, TypeError):
+        total_people = 0
+    if total_people < 0:
+        total_people = 0
+
+    try:
+        waiters_count = int(data.get('waiters_count', 0) or 0)
+    except (ValueError, TypeError):
+        waiters_count = 0
+    if waiters_count < 0:
+        waiters_count = 0
+
     # Create new booking
     new_booking = Booking(
         customer_name=customer_name,
         customer_phone=customer_phone,
         event_date=event_date,
         slot=slot,
+        total_people=total_people,
+        waiters_count=waiters_count,
         total_amount=total_amount,
         advance_paid=advance_paid,
         status=status
@@ -394,6 +428,18 @@ def update_booking(booking_id):
 
         booking.event_date = new_date
         booking.slot = new_slot
+
+    if 'total_people' in data:
+        try:
+            booking.total_people = max(0, int(data['total_people'] or 0))
+        except (ValueError, TypeError):
+            pass
+
+    if 'waiters_count' in data:
+        try:
+            booking.waiters_count = max(0, int(data['waiters_count'] or 0))
+        except (ValueError, TypeError):
+            pass
 
     if 'total_amount' in data:
         try:
@@ -959,6 +1005,17 @@ HTML_TEMPLATE = """
 
           <div class="form-row">
             <div class="form-group">
+              <label for="totalPeople">Total People (Guests)</label>
+              <input type="number" id="totalPeople" placeholder="e.g. 500" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="waitersCount">No. of Waiters</label>
+              <input type="number" id="waitersCount" placeholder="e.g. 20" min="0" step="1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
               <label for="totalAmt">Total Amount (₹)</label>
               <input type="number" id="totalAmt" placeholder="85000" min="0" step="1000" required>
             </div>
@@ -1011,6 +1068,16 @@ HTML_TEMPLATE = """
         </div>
         <div class="form-row">
           <div class="form-group">
+            <label>Total People (Guests)</label>
+            <input type="number" id="editTotalPeople" min="0" placeholder="0">
+          </div>
+          <div class="form-group">
+            <label>No. of Waiters</label>
+            <input type="number" id="editWaitersCount" min="0" placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
             <label>Total Amount (₹)</label>
             <input type="number" id="editTotalAmt" required min="0">
           </div>
@@ -1044,7 +1111,6 @@ HTML_TEMPLATE = """
       </div>
       <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:13px; color:var(--text-muted);">Manage, modify, or delete any booking across all dates:</span>
-        <button class="action-btn btn-outline-danger btn-xs" onclick="confirmResetAll()">Clear All Bookings</button>
       </div>
       <div class="table-container">
         <table>
@@ -1054,6 +1120,7 @@ HTML_TEMPLATE = """
               <th>Customer</th>
               <th>Date</th>
               <th>Slot</th>
+              <th>Guests / Waiters</th>
               <th>Amount</th>
               <th>Status</th>
               <th style="text-align:right">Actions</th>
@@ -1148,7 +1215,7 @@ HTML_TEMPLATE = """
                 </div>
               </div>
               <div class="booking-card-sub">
-                📞 ${escapeHtml(b.customer_phone)} &bull; Total: ₹${b.total_amount.toLocaleString('en-IN')} &bull; Advance: ₹${b.advance_paid.toLocaleString('en-IN')} &bull; Balance: ₹${b.balance_amount.toLocaleString('en-IN')}
+                📞 ${escapeHtml(b.customer_phone)} &bull; 👥 ${b.total_people || 0} Guests &bull; 🤵 ${b.waiters_count || 0} Waiters &bull; Total: ₹${b.total_amount.toLocaleString('en-IN')} &bull; Advance: ₹${b.advance_paid.toLocaleString('en-IN')} &bull; Balance: ₹${b.balance_amount.toLocaleString('en-IN')}
               </div>
               <div class="card-actions">
                 <button class="btn-xs btn-edit" onclick='openEditModal(${JSON.stringify(b)})'>
@@ -1231,6 +1298,8 @@ HTML_TEMPLATE = """
       document.getElementById('editCustPhone').value = booking.customer_phone;
       document.getElementById('editEventDate').value = booking.event_date;
       document.getElementById('editSlotSelect').value = booking.slot;
+      document.getElementById('editTotalPeople').value = booking.total_people || 0;
+      document.getElementById('editWaitersCount').value = booking.waiters_count || 0;
       document.getElementById('editTotalAmt').value = booking.total_amount;
       document.getElementById('editAdvanceAmt').value = booking.advance_paid;
       document.getElementById('editStatusSelect').value = booking.status;
@@ -1250,6 +1319,8 @@ HTML_TEMPLATE = """
         customer_phone: document.getElementById('editCustPhone').value,
         event_date: document.getElementById('editEventDate').value,
         slot: document.getElementById('editSlotSelect').value,
+        total_people: parseInt(document.getElementById('editTotalPeople').value) || 0,
+        waiters_count: parseInt(document.getElementById('editWaitersCount').value) || 0,
         total_amount: parseFloat(document.getElementById('editTotalAmt').value),
         advance_paid: parseFloat(document.getElementById('editAdvanceAmt').value),
         status: document.getElementById('editStatusSelect').value
@@ -1278,7 +1349,7 @@ HTML_TEMPLATE = """
     async function openAllBookingsModal() {
       const modal = document.getElementById('allBookingsModal');
       const tbody = document.getElementById('allBookingsTableBody');
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">Loading bookings...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Loading bookings...</td></tr>';
       modal.style.display = 'flex';
 
       try {
@@ -1287,7 +1358,7 @@ HTML_TEMPLATE = """
         tbody.innerHTML = '';
 
         if (!data.bookings || data.bookings.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No bookings recorded in system.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--text-muted);">No bookings recorded in system.</td></tr>';
           return;
         }
 
@@ -1299,6 +1370,7 @@ HTML_TEMPLATE = """
             <td><strong>${escapeHtml(b.customer_name)}</strong><br><small style="color:var(--text-muted)">${escapeHtml(b.customer_phone)}</small></td>
             <td>${b.event_date}</td>
             <td><span class="badge" style="background:rgba(201,147,59,0.15); color:var(--primary-light)">${b.slot}</span></td>
+            <td>👥 ${b.total_people || 0} guests<br><small style="color:var(--text-muted)">🤵 ${b.waiters_count || 0} waiters</small></td>
             <td>₹${b.total_amount.toLocaleString('en-IN')}<br><small style="color:var(--text-muted)">Adv: ₹${b.advance_paid.toLocaleString('en-IN')}</small></td>
             <td><span class="badge" style="background:${isCancelled ? 'rgba(239,68,68,0.15)' : 'rgba(16,185,129,0.15)'}; color:${isCancelled ? '#f87171' : '#34d399'}">${b.status}</span></td>
             <td style="text-align:right">
@@ -1313,7 +1385,7 @@ HTML_TEMPLATE = """
           tbody.appendChild(tr);
         });
       } catch (_) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--danger);">Failed to load bookings.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:var(--danger);">Failed to load bookings.</td></tr>';
       }
     }
 
@@ -1362,6 +1434,8 @@ HTML_TEMPLATE = """
         customer_phone: document.getElementById('custPhone').value,
         event_date: eventDateInput.value,
         slot: slotSelect.value,
+        total_people: parseInt(document.getElementById('totalPeople').value) || 0,
+        waiters_count: parseInt(document.getElementById('waitersCount').value) || 0,
         total_amount: parseFloat(document.getElementById('totalAmt').value),
         advance_paid: parseFloat(document.getElementById('advanceAmt').value),
         status: "Confirmed"
@@ -1380,6 +1454,8 @@ HTML_TEMPLATE = """
           // Clear inputs
           document.getElementById('custName').value = '';
           document.getElementById('custPhone').value = '';
+          document.getElementById('totalPeople').value = '';
+          document.getElementById('waitersCount').value = '';
           document.getElementById('totalAmt').value = '';
           document.getElementById('advanceAmt').value = '';
           

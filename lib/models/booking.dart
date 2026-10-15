@@ -4,6 +4,8 @@ class Booking {
   final String customerPhone;
   final String eventDate; // Format: "YYYY-MM-DD"
   final String slot; // "Morning", "Evening", "Full Day"
+  final int totalPeople;
+  final int waitersCount;
   final double totalAmount;
   final double advancePaid;
   final double balanceAmount;
@@ -16,6 +18,8 @@ class Booking {
     required this.customerPhone,
     required this.eventDate,
     required this.slot,
+    this.totalPeople = 0,
+    this.waitersCount = 0,
     required this.totalAmount,
     required this.advancePaid,
     double? balanceAmount,
@@ -32,6 +36,8 @@ class Booking {
       customerPhone: json['customer_phone']?.toString() ?? '',
       eventDate: json['event_date']?.toString() ?? '',
       slot: json['slot']?.toString() ?? 'Morning',
+      totalPeople: (json['total_people'] as num?)?.toInt() ?? 0,
+      waitersCount: (json['waiters_count'] as num?)?.toInt() ?? 0,
       totalAmount: total,
       advancePaid: advance,
       balanceAmount: (json['balance_amount'] as num?)?.toDouble() ?? (total - advance),
@@ -46,6 +52,8 @@ class Booking {
       'customer_phone': customerPhone,
       'event_date': eventDate,
       'slot': slot,
+      'total_people': totalPeople,
+      'waiters_count': waitersCount,
       'total_amount': totalAmount,
       'advance_paid': advancePaid,
       'status': status,

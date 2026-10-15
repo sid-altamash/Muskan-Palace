@@ -211,6 +211,58 @@ class SlotCard extends StatelessWidget {
                     ],
                   ),
 
+                  if (booking!.totalPeople > 0 || booking!.waitersCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (booking!.totalPeople > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.35)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.groups_rounded, size: 12, color: Color(0xFF60A5FA)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${booking!.totalPeople} Guests',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF93C5FD), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        if (booking!.totalPeople > 0 && booking!.waitersCount > 0)
+                          const SizedBox(width: 8),
+                        if (booking!.waitersCount > 0) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(5),
+                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.room_service_rounded, size: 12, color: Color(0xFF34D399)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${booking!.waitersCount} Waiters',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF6EE7B7), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+
                   // Alter / Edit and Delete Action Row
                   if (onEdit != null || onDelete != null) ...[
                     const SizedBox(height: 10),
