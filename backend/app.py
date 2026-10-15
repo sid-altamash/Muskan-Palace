@@ -10,9 +10,10 @@ app = Flask(__name__)
 
 # Configuration
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL', f'sqlite:///{os.path.join(BASE_DIR, "banquet.db")}'
-)
+db_url = os.environ.get('DATABASE_URL', f'sqlite:///{os.path.join(BASE_DIR, "banquet.db")}')
+if db_url and db_url.startswith('postgres://'):
+    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Enable CORS for cross-platform Flutter mobile & web clients
@@ -20,6 +21,12 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Initialize Database
 db = SQLAlchemy(app)
+
+with app.app_context():
+    try:
+        db.create_all()
+    except Exception as e:
+        app.logger.warning(f"Database initialization note: {e}")
 
 # Allowed Slot Options
 SLOT_MORNING = "Morning"
@@ -601,6 +608,7 @@ HTML_TEMPLATE = """
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Muskan Palace - Banquet Hall Management Console</title>
+  <link rel="icon" type="image/png" href="/static/images/logo_web.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
@@ -642,10 +650,17 @@ HTML_TEMPLATE = """
     }
     .logo-area { display: flex; align-items: center; gap: 14px; }
     .logo-badge {
-      width: 48px; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, var(--primary), #845314);
+      width: 52px; height: 52px; border-radius: 12px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 24px; box-shadow: 0 4px 16px rgba(201, 147, 59, 0.3);
+      box-shadow: 0 4px 16px rgba(201, 147, 59, 0.35);
+      border: 1.5px solid rgba(201, 147, 59, 0.6);
+      overflow: hidden;
+      background: #141a29;
+    }
+    .logo-badge img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
     .title-box h1 { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--primary-light); }
     .title-box p { font-size: 13px; color: var(--text-muted); }
@@ -807,7 +822,9 @@ HTML_TEMPLATE = """
   <div class="container">
     <header>
       <div class="logo-area">
-        <div class="logo-badge">🏛️</div>
+        <div class="logo-badge">
+          <img src="/static/images/logo_web.png" alt="Muskan Palace" onerror="this.parentElement.innerHTML='🏛️';">
+        </div>
         <div class="title-box">
           <h1>Muskan Palace</h1>
           <p>Banquet Hall Management System &bull; Live API Console</p>
