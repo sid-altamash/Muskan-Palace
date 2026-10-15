@@ -850,12 +850,6 @@ HTML_TEMPLATE = """
         <button class="action-btn btn-outline-info" onclick="openAllBookingsModal()">
           📋 Manage All Bookings
         </button>
-        <button class="action-btn btn-outline-danger" onclick="confirmResetAll()">
-          🧹 Clear All Bookings (Fresh Slate)
-        </button>
-        <button class="action-btn btn-outline-primary" onclick="loadSampleData()">
-          🌱 Load Demo Bookings
-        </button>
         <span class="badge">● REST API Active</span>
       </div>
     </header>
@@ -1221,41 +1215,6 @@ HTML_TEMPLATE = """
         const data = await res.json();
         if (res.ok) {
           showToast(`✓ Booking #${id} status changed to ${newStatus}. Slots updated!`);
-          refreshAll();
-        } else {
-          showToast(`✗ ${data.message}`, true);
-        }
-      } catch (_) {
-        showToast('✗ Network error', true);
-      }
-    }
-
-    // Direct Action: Clear All Bookings
-    async function confirmResetAll() {
-      if (!confirm('⚠️ Are you sure you want to CLEAR ALL bookings? This will reset the system to 0 bookings and an empty calendar!')) return;
-      try {
-        const res = await fetch('/api/bookings/reset', { method: 'POST' });
-        const data = await res.json();
-        if (res.ok) {
-          showToast('✓ All bookings cleared! Database is now empty.');
-          closeAllBookingsModal();
-          refreshAll();
-        } else {
-          showToast(`✗ ${data.message}`, true);
-        }
-      } catch (_) {
-        showToast('✗ Network error', true);
-      }
-    }
-
-    // Direct Action: Load Sample Demo Data
-    async function loadSampleData() {
-      if (!confirm('Load sample bookings for testing? This will replace current bookings with demo wedding/event records.')) return;
-      try {
-        const res = await fetch('/api/bookings/seed', { method: 'POST' });
-        const data = await res.json();
-        if (res.ok) {
-          showToast('✓ Sample bookings loaded.');
           refreshAll();
         } else {
           showToast(`✗ ${data.message}`, true);

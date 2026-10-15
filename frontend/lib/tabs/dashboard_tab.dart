@@ -6,14 +6,19 @@ import '../widgets/metric_card.dart';
 
 class DashboardTab extends StatefulWidget {
   final VoidCallback? onNavigateToCalendar;
+  final VoidCallback? onNavigateToAllBookings;
 
-  const DashboardTab({super.key, this.onNavigateToCalendar});
+  const DashboardTab({
+    super.key,
+    this.onNavigateToCalendar,
+    this.onNavigateToAllBookings,
+  });
 
   @override
-  State<DashboardTab> createState() => _DashboardTabState();
+  State<DashboardTab> createState() => DashboardTabState();
 }
 
-class _DashboardTabState extends State<DashboardTab> {
+class DashboardTabState extends State<DashboardTab> {
   final ApiService _apiService = ApiService();
   final NumberFormat _currencyFormat =
       NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -22,6 +27,11 @@ class _DashboardTabState extends State<DashboardTab> {
   MonthlyAnalytics? _analytics;
   bool _isLoading = true;
   String? _error;
+
+  void refresh() {
+    _loadAnalytics();
+  }
+
 
   @override
   void initState() {
@@ -432,6 +442,63 @@ class _DashboardTabState extends State<DashboardTab> {
                 ],
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Quick Action: Manage All Bookings
+        InkWell(
+          onTap: widget.onNavigateToAllBookings,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E2638), Color(0xFF141A29)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: const Color(0xFFC9933B).withValues(alpha: 0.4),
+                width: 1.2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC9933B).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.receipt_long_rounded, color: Color(0xFFF3C977), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Manage All Bookings',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'View, search, edit/alter, or delete reservations',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFC9933B), size: 16),
+              ],
+            ),
           ),
         ),
       ],

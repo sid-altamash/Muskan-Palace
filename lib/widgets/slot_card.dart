@@ -7,6 +7,8 @@ class SlotCard extends StatelessWidget {
   final bool isAvailable;
   final Booking? booking;
   final VoidCallback? onBookNow;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const SlotCard({
     super.key,
@@ -14,6 +16,8 @@ class SlotCard extends StatelessWidget {
     required this.isAvailable,
     this.booking,
     this.onBookNow,
+    this.onEdit,
+    this.onDelete,
   });
 
   String _getTimeWindow() {
@@ -129,7 +133,7 @@ class SlotCard extends StatelessWidget {
             ],
           ),
 
-          // If Booked, display customer details
+          // If Booked, display customer details and action buttons
           if (isBooked && booking != null) ...[
             const SizedBox(height: 14),
             Container(
@@ -155,12 +159,27 @@ class SlotCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        'Status: ${booking!.status}',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white.withValues(alpha: 0.7),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: booking!.status == 'Cancelled'
+                              ? const Color(0xFFEF4444).withValues(alpha: 0.2)
+                              : booking!.status == 'Tentative'
+                                  ? const Color(0xFFF59E0B).withValues(alpha: 0.2)
+                                  : const Color(0xFF10B981).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          booking!.status,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: booking!.status == 'Cancelled'
+                                ? const Color(0xFFF87171)
+                                : booking!.status == 'Tentative'
+                                    ? const Color(0xFFFBBF24)
+                                    : const Color(0xFF34D399),
+                          ),
                         ),
                       ),
                     ],
@@ -191,6 +210,49 @@ class SlotCard extends StatelessWidget {
                       ),
                     ],
                   ),
+
+                  // Alter / Edit and Delete Action Row
+                  if (onEdit != null || onDelete != null) ...[
+                    const SizedBox(height: 10),
+                    const Divider(color: Colors.white12, height: 1),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (onEdit != null)
+                          TextButton.icon(
+                            onPressed: onEdit,
+                            icon: const Icon(Icons.edit_outlined, size: 14),
+                            label: const Text('Alter / Edit', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFF3C977),
+                              backgroundColor: const Color(0xFFC9933B).withValues(alpha: 0.15),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: BorderSide(color: const Color(0xFFC9933B).withValues(alpha: 0.5)),
+                              ),
+                            ),
+                          ),
+                        if (onEdit != null && onDelete != null) const SizedBox(width: 8),
+                        if (onDelete != null)
+                          TextButton.icon(
+                            onPressed: onDelete,
+                            icon: const Icon(Icons.delete_outline_rounded, size: 14),
+                            label: const Text('Delete', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFFF87171),
+                              backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                                side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.5)),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),

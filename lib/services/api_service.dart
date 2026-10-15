@@ -148,6 +148,85 @@ class ApiService {
     }
   }
 
+  /// GET /api/bookings?status=...&date=...&year=...&month=...
+  Future<List<Booking>> getAllBookings({String? status, String? date, int? year, int? month}) async {
+    final queryParams = <String, String>{};
+    if (status != null && status.isNotEmpty) queryParams['status'] = status;
+    if (date != null && date.isNotEmpty) queryParams['date'] = date;
+    if (year != null) queryParams['year'] = year.toString();
+    if (month != null) queryParams['month'] = month.toString();
+
+    final queryString = queryParams.isNotEmpty
+        ? '?${queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}'
+        : '';
+
+    final uri = Uri.parse('$baseUrl/api/bookings$queryString');
+    try {
+      final response = await http.get(uri).timeout(requestTimeout);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body) as Map<String, dynamic>;
+        final rawList = data['bookings'] as List<dynamic>? ?? [];
+        return rawList.map((item) => Booking.fromJson(item as Map<String, dynamic>)).toList();
+      } else {
+        final err = _parseErrorMessage(response.body, statusCode: response.statusCode);
+        throw ApiException(err, statusCode: response.statusCode);
+      }
+    } on TimeoutException {
+      throw ApiException('Request timed out while loading bookings.');
+    } on SocketException {
+      throw ApiException('Cannot reach server. Please check internet connection.');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Failed to load bookings: ${e.toString()}');
+    }
+  }
+
+  /// PATCH /api/bookings/<id>
+  Future<Map<String, dynamic>> updateBooking(int id, Map<String, dynamic> updates) async {
+    final uri = Uri.parse('$baseUrl/api/bookings/$id');
+    try {
+      final response = await http.patch(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(updates),
+      ).timeout(requestTimeout);
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) {
+        return data;
+      } else {
+        final msg = data['message'] ?? data['error'] ?? 'Update failed';
+        throw ApiException(msg.toString(), statusCode: response.statusCode);
+      }
+    } on TimeoutException {
+      throw ApiException('Update request timed out. Please try again.');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error updating booking: ${e.toString()}');
+    }
+  }
+
+  /// DELETE /api/bookings/<id>
+  Future<bool> deleteBooking(int id) async {
+    final uri = Uri.parse('$baseUrl/api/bookings/$id');
+    try {
+      final response = await http.delete(uri).timeout(requestTimeout);
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final data = json.decode(response.body) as Map<String, dynamic>?;
+        final msg = data?['message'] ?? 'Failed to delete booking';
+        throw ApiException(msg.toString(), statusCode: response.statusCode);
+      }
+    } on TimeoutException {
+      throw ApiException('Delete request timed out. Please try again.');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      throw ApiException('Error deleting booking: ${e.toString()}');
+    }
+  }
+
+
   String _parseErrorMessage(String responseBody, {int? statusCode}) {
     try {
       final data = json.decode(responseBody);

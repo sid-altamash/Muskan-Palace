@@ -374,6 +374,88 @@ class _CalendarBookingTabState extends State<CalendarBookingTab> {
     );
   }
 
+  void _editBooking(Booking booking) {
+    final avail = _availability?.availableSlots ?? ['Morning', 'Evening', 'Full Day'];
+    BookingFormModal.show(
+      context: context,
+      selectedDate: DateTime.tryParse(booking.eventDate) ?? _selectedDay,
+      availableSlots: avail,
+      existingBooking: booking,
+      onBookingSuccess: () {
+        _fetchAvailability(_selectedDay);
+        _fetchMonthSummary(_focusedDay.year, _focusedDay.month);
+        widget.onBookingCreated?.call();
+      },
+    );
+  }
+
+  Future<void> _deleteBooking(Booking booking) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF141A29),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
+            SizedBox(width: 8),
+            Text('Delete Booking', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to delete Booking #${booking.id} for "${booking.customerName}" on ${booking.eventDate}?\n\nThis will permanently delete the reservation and free up the slot.',
+          style: const TextStyle(color: Colors.white70, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Delete Permanently'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      try {
+        await _apiService.deleteBooking(booking.id!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              content: Row(
+                children: [
+                  const Icon(Icons.delete_sweep, color: Colors.white),
+                  const SizedBox(width: 8),
+                  Text('Booking #${booking.id} deleted successfully.'),
+                ],
+              ),
+            ),
+          );
+          _fetchAvailability(_selectedDay);
+          _fetchMonthSummary(_focusedDay.year, _focusedDay.month);
+          widget.onBookingCreated?.call();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFFEF4444),
+              content: Text('Failed to delete booking: ${e.toString()}'),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   Widget _buildSlotList() {
     final avail = _availability?.availableSlots ?? ['Morning', 'Evening', 'Full Day'];
     final bookings = _availability?.bookings ?? [];
@@ -390,26 +472,33 @@ class _CalendarBookingTabState extends State<CalendarBookingTab> {
     final eveningBooking = findBooking('Evening');
     final fullDayBooking = findBooking('Full Day');
 
+    final effectiveMorning = morningBooking ?? fullDayBooking;
+    final effectiveEvening = eveningBooking ?? fullDayBooking;
+
     return Column(
       children: [
         // 1. Morning Slot
         SlotCard(
           slotName: 'Morning',
           isAvailable: avail.contains('Morning'),
-          booking: morningBooking ?? fullDayBooking,
+          booking: effectiveMorning,
           onBookNow: avail.contains('Morning')
               ? () => _openBookingModal(preselectedSlot: 'Morning')
               : null,
+          onEdit: effectiveMorning != null ? () => _editBooking(effectiveMorning) : null,
+          onDelete: effectiveMorning != null ? () => _deleteBooking(effectiveMorning) : null,
         ),
 
         // 2. Evening Slot
         SlotCard(
           slotName: 'Evening',
           isAvailable: avail.contains('Evening'),
-          booking: eveningBooking ?? fullDayBooking,
+          booking: effectiveEvening,
           onBookNow: avail.contains('Evening')
               ? () => _openBookingModal(preselectedSlot: 'Evening')
               : null,
+          onEdit: effectiveEvening != null ? () => _editBooking(effectiveEvening) : null,
+          onDelete: effectiveEvening != null ? () => _deleteBooking(effectiveEvening) : null,
         ),
 
         // 3. Full Day Slot
@@ -420,8 +509,11 @@ class _CalendarBookingTabState extends State<CalendarBookingTab> {
           onBookNow: avail.contains('Full Day')
               ? () => _openBookingModal(preselectedSlot: 'Full Day')
               : null,
+          onEdit: fullDayBooking != null ? () => _editBooking(fullDayBooking) : null,
+          onDelete: fullDayBooking != null ? () => _deleteBooking(fullDayBooking) : null,
         ),
       ],
     );
   }
 }
+

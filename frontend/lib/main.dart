@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'tabs/dashboard_tab.dart';
 import 'tabs/calendar_booking_tab.dart';
+import 'tabs/all_bookings_tab.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,14 +58,17 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
-  final GlobalKey<State<DashboardTab>> _dashboardKey = GlobalKey();
+  final GlobalKey<DashboardTabState> _dashboardKey = GlobalKey();
+  final GlobalKey<AllBookingsTabState> _allBookingsKey = GlobalKey();
 
   void _onTabTapped(int index) {
     setState(() => _currentIndex = index);
   }
 
-  void _handleBookingCreated() {
-    // When a booking is created in Calendar tab, force refresh on dashboard
+  void _handleBookingChanged() {
+    // Force refresh across all tabs when any booking is created, altered, or deleted
+    _dashboardKey.currentState?.refresh();
+    _allBookingsKey.currentState?.fetchBookings();
     setState(() {});
   }
 
@@ -74,9 +78,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       DashboardTab(
         key: _dashboardKey,
         onNavigateToCalendar: () => _onTabTapped(1),
+        onNavigateToAllBookings: () => _onTabTapped(2),
       ),
       CalendarBookingTab(
-        onBookingCreated: _handleBookingCreated,
+        onBookingCreated: _handleBookingChanged,
+      ),
+      AllBookingsTab(
+        key: _allBookingsKey,
+        onBookingChanged: _handleBookingChanged,
       ),
     ];
 
@@ -122,6 +131,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               icon: Icon(Icons.calendar_today_outlined),
               activeIcon: Icon(Icons.calendar_month_rounded),
               label: 'Calendar & Slots',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_long_outlined),
+              activeIcon: Icon(Icons.receipt_long_rounded),
+              label: 'All Bookings',
             ),
           ],
         ),
